@@ -1,8 +1,16 @@
 #include "util.hpp"
 #include <Arduino.h>
 
+#define PIN_RED 15
+#define PIN_GREEN 2
+#define PIN_BLUE 4
+#define PIN_ANALOG_IN 27
 #define PWM_FREQUENCY 1000
-#define PWM_BIT_PRECISION 8
+#define PWM_BIT_PRECISION 12
+#define PWM_BIT_PRECISION_RANGE pow(2, PWM_BIT_PRECISION)
+#define PWM_CHANNEL_RED 0
+#define PWM_CHANNEL_GREEN 1
+#define PWM_CHANNEL_BLUE 2
 #define RGB_MAX 255
 #define HSL_HUE_INITIAL 0
 #define HSL_HUE_STEP 1
@@ -13,17 +21,18 @@
 
 // Define LED pin numbers and their corresponding PWM channels. The nth LED pin
 // number corresponds to the nth PWM channel
-const uint8_t ledPins[] = { 15, 2, 4 };
-const uint8_t pwmChannels[] = { 0, 1, 2 };
+const uint8_t ledPins[] = { PIN_RED, PIN_GREEN, PIN_BLUE };
+const uint8_t pwmChannels[] = { PWM_CHANNEL_RED,
+                                PWM_CHANNEL_GREEN,
+                                PWM_CHANNEL_BLUE };
 
 // Use HSL colour and convert to RGB. Simply increment the hue and % by 360, and
 // store the result of the conversion in red, green, and blue
-int16_t hue = HSL_HUE_INITIAL;
+int16_t hue;
 uint8_t red = 0, green = 0, blue = 0;
 
-// Increment hue by HSL_HUE_STEP and % by HSL_HUE_MAX
-void
-updateHue();
+inline float
+normalise(float value, float min, float max);
 
 // Set the colour of the RGB LED
 void
@@ -42,17 +51,18 @@ setup()
 void
 loop()
 {
+  float adc = analogRead(PIN_ANALOG_IN);
+  float hue = normalise(adc, 0, PWM_BIT_PRECISION_RANGE) * 360;
+
   hslToRgb(hue, HSL_SATURATION, HSL_LIGHTNESS, &red, &green, &blue);
-  updateHue();
   setColour();
   delay(LED_DELAY_MS);
 }
 
-void
-updateHue()
+inline float
+normalise(float value, float min, float max)
 {
-  hue += HSL_HUE_STEP;
-  hue %= HSL_HUE_MAX;
+  return (value - min) / (max - min);
 }
 
 void
