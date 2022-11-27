@@ -1,66 +1,66 @@
-#include "generator.hpp"
+#include "util.hpp"
 #include <Arduino.h>
-
-#define DEBUG
 
 #define PWM_FREQUENCY 1000
 #define PWM_BIT_PRECISION 8
 #define RGB_MAX 255
-#define RGB_STEP_PER_UPDATE 1
-#define LED_DELAY_MS 5
+#define HSL_HUE_INITIAL 0
+#define HSL_HUE_STEP 1
+#define HSL_HUE_MAX 360
+#define HSL_SATURATION 1
+#define HSL_LIGHTNESS 0.5
+#define LED_DELAY_MS 60
 
 // Define LED pin numbers and their corresponding PWM channels. The nth LED pin
 // number corresponds to the nth PWM channel
 const uint8_t ledPins[] = { 15, 2, 4 };
 const uint8_t pwmChannels[] = { 0, 1, 2 };
 
-// Contains the current red, green, and blue values from 0-255. The structure
-// each value is contained in cycles through 0-255 indefinitely
-generator_t* rgbValues[3];
+// Use HSV colour and convert to RGB. Simply increment the hue and % by 360, and
+// store the result of the conversion in red, green, and blue
+int16_t hue = HSL_HUE_INITIAL;
+uint8_t red = 0, green = 0, blue = 0;
 
-// Set the colour using rgbValues
+// Increment hue by HSL_HUE_STEP and % by HSL_HUE_MAX
+void
+updateHue();
+
+// Write the duties for red, green, and blue colour intensities on their
+// respective PWM channels
 void
 setColour();
 
 void
 setup()
 {
+  // Initialise PWM channels and attach them to their respective pins
   for (int i = 0; i < 3; i++) {
     ledcSetup(pwmChannels[i], PWM_FREQUENCY, PWM_BIT_PRECISION);
     ledcAttachPin(ledPins[i], pwmChannels[i]);
-
-    rgbValues[i] = genCreate(0, 0, RGB_MAX, RGB_STEP_PER_UPDATE);
   }
-
-#ifdef DEBUG
-  Serial.begin(115200);
-#endif
 }
 
 void
 loop()
 {
-  for (int i = 0; i < 3; i++) {
-    if (genAdvance(rgbValues[i])) {
-      break;
-    }
-  }
-
-#ifdef DEBUG
-  Serial.printf("(%d, %d, %d)\n",
-                rgbValues[0]->current,
-                rgbValues[1]->current,
-                rgbValues[2]->current);
-#endif
-
+  hslToRgb(hue, HSL_SATURATION, HSL_LIGHTNESS, &red, &green, &blue);
+  updateHue();
   setColour();
   delay(LED_DELAY_MS);
 }
 
 void
+updateHue()
+{
+  hue += HSL_HUE_STEP;
+  hue %= HSL_HUE_MAX;
+}
+
+void
 setColour()
 {
-  for (int i = 0; i < 3; i++) {
-    ledcWrite(pwmChannels[i], RGB_MAX - rgbValues[i]->current);
-  }
+  // Duties are calculated by subtracting the colour from 255
+  ledcWrite(pwmChannels[0], RGB_MAX - red);
+  ledcWrite(pwmChannels[1], RGB_MAX - green);
+  ledcWrite(pwmChannels[2], RGB_MAX - blue);
 }
