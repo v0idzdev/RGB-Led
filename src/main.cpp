@@ -16,7 +16,7 @@
 const uint8_t ledPins[] = { 15, 2, 4 };
 const uint8_t pwmChannels[] = { 0, 1, 2 };
 
-// Use HSV colour and convert to RGB. Simply increment the hue and % by 360, and
+// Use HSL colour and convert to RGB. Simply increment the hue and % by 360, and
 // store the result of the conversion in red, green, and blue
 int16_t hue = HSL_HUE_INITIAL;
 uint8_t red = 0, green = 0, blue = 0;
@@ -25,8 +25,7 @@ uint8_t red = 0, green = 0, blue = 0;
 void
 updateHue();
 
-// Write the duties for red, green, and blue colour intensities on their
-// respective PWM channels
+// Set the colour of the RGB LED
 void
 setColour();
 
@@ -59,7 +58,6 @@ updateHue()
 void
 setColour()
 {
-  // Duties are calculated by subtracting the colour from 255
   ledcWrite(pwmChannels[0], RGB_MAX - red);
   ledcWrite(pwmChannels[1], RGB_MAX - green);
   ledcWrite(pwmChannels[2], RGB_MAX - blue);
